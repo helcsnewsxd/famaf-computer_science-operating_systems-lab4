@@ -115,7 +115,8 @@ bool fat_table_cluster_is_bad_sector(u32 cluster) {
 }
 
 bool fat_table_cluster_is_valid(u32 cluster) {
-    return !fat_table_cluster_is_EOC(cluster) && !fat_table_cluster_is_bad_sector(cluster);
+    return !fat_table_cluster_is_EOC(cluster) &&
+           !fat_table_cluster_is_bad_sector(cluster);
 }
 
 void fat_table_print(fat_table table, u32 start_cluster, u32 end_cluster) {
@@ -124,9 +125,10 @@ void fat_table_print(fat_table table, u32 start_cluster, u32 end_cluster) {
         if (fat_table_cluster_is_EOC(
                 le32_to_cpu(((const le32 *)table->fat_map)[cur_cluster]))) {
             printf("|[%u]EOC", cur_cluster);
-        } else if (fat_table_cluster_is_bad_sector(
-                le32_to_cpu(((const le32 *)table->fat_map)[cur_cluster]) )) {
-            printf("|[%u]0x%x", cur_cluster, ((le32 *)table->fat_map)[cur_cluster]);
+        } else if (fat_table_cluster_is_bad_sector(le32_to_cpu(
+                       ((const le32 *)table->fat_map)[cur_cluster]))) {
+            printf("|[%u]0x%x", cur_cluster,
+                   ((le32 *)table->fat_map)[cur_cluster]);
         } else {
             printf("|[%u]%u", cur_cluster,
                    ((le32 *)table->fat_map)[cur_cluster]);

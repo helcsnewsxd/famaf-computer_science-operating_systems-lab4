@@ -38,7 +38,6 @@ struct stat;
 #define MAX_FILENAME (8 + 1 + 3 + 1)
 #define MAX_PATH_LEN 4096 /* Copied from libfat */
 
-
 /********************* DATA STRUCTURES *********************/
 
 /* Format of a FAT directory entry on disk (32 bytes) */
@@ -60,7 +59,6 @@ struct fat_dir_entry_s {
     le16 start_cluster_low;  // only last two bytes
     le32 file_size;
 } __attribute__((packed));
-
 
 /* Wrapper around a FAT directory entry that contains members used to put it in
  * data structures, and to use it as a file handle */
@@ -100,10 +98,11 @@ struct fat_file_s {
     u32 children_read : 1;
 };
 
-/* Inits a file without using a parent's direntry. Can be used to create root file.
- * TAD is owner of @filepath and will apply free at destroy.
+/* Inits a file without using a parent's direntry. Can be used to create root
+ * file. TAD is owner of @filepath and will apply free at destroy.
  */
-fat_file fat_file_init_orphan_dir(char *name, fat_table table, u32 start_cluster);
+fat_file fat_file_init_orphan_dir(char *name, fat_table table,
+                                  u32 start_cluster);
 
 /* Returns an new directory entry with default values.
  * Caller is still owner of @filepath reference.

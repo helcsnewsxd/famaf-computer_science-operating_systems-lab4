@@ -22,7 +22,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-
 #define LOG_MESSAGE_SIZE 100
 #define DATE_MESSAGE_SIZE 30
 
@@ -46,7 +45,6 @@
 //     strcat(buf, "\n");
 //     int message_size = strlen(buf);
 // }
-
 
 /* Get file attributes (file descriptor version) */
 int fat_fuse_fgetattr(const char *path, struct stat *stbuf,
@@ -111,9 +109,9 @@ int fat_fuse_opendir(const char *path, struct fuse_file_info *fi) {
 
 /* Read directory children. Calls function fat_file_read_children which returns
  * a list of files inside a GList. The children were read from the directory
- * entries in the cluster of the directory. 
- * This function iterates over the list of children and adds them to the 
- * file tree. 
+ * entries in the cluster of the directory.
+ * This function iterates over the list of children and adds them to the
+ * file tree.
  * This operation should be performed only once per directory, the first time
  * readdir is called.
  */

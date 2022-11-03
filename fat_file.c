@@ -18,7 +18,6 @@
 #include "fat_table.h"
 #include "fat_util.h"
 
-
 /* Logging function to print a directory entry. Commented to avoid unused
  * function error.
  */
@@ -118,7 +117,8 @@ static fat_file fat_file_init_empty(bool is_dir, char *filepath) {
     return new_file;
 }
 
-fat_file fat_file_init_orphan_dir(char *name, fat_table table, u32 start_cluster) {
+fat_file fat_file_init_orphan_dir(char *name, fat_table table,
+                                  u32 start_cluster) {
     fat_dir_entry orphan_entry =
         fat_file_init_direntry(true, strdup(name), start_cluster);
     fat_file orphan_dir = fat_file_init_empty(true, strdup(name));
@@ -226,7 +226,8 @@ fat_file fat_file_init(fat_table table, bool is_dir, char *filepath) {
                    (char *)&(new_file->name));
     new_file->start_cluster = file_start_cluster(new_file->dentry);
 
-    fat_table_set_next_cluster(table, start_cluster, FAT_CLUSTER_END_OF_CHAIN_MAX);
+    fat_table_set_next_cluster(table, start_cluster,
+                               FAT_CLUSTER_END_OF_CHAIN_MAX);
     if (errno != 0) {
         fat_file_destroy(new_file);
         return NULL;
@@ -308,9 +309,11 @@ static void write_dir_entry(fat_file parent, fat_file file) {
         DEBUG("The parent directory is full.");
         return;
     }
-    DEBUG("Writting dentry on directory %s, entry %u", parent->name, file->pos_in_parent);
+    DEBUG("Writting dentry on directory %s, entry %u", parent->name,
+          file->pos_in_parent);
     // Calculate the position of the next entry
-    off_t entry_offset = (off_t)(file->pos_in_parent * entry_size) + parent_offset;
+    off_t entry_offset =
+        (off_t)(file->pos_in_parent * entry_size) + parent_offset;
     ssize_t written_bytes =
         pwrite(parent->table->fd, file->dentry, entry_size, entry_offset);
     if (written_bytes < entry_size) {
@@ -377,7 +380,7 @@ static void read_cluster_dir_entries(u8 *buffer, fat_dir_entry end_ptr,
             dir->children_read = 1;
             break;
         }
-        if (ignore_dentry(disk_dentry_ptr)) {            
+        if (ignore_dentry(disk_dentry_ptr)) {
             continue;
         }
         // Create and fill new child structure
@@ -517,7 +520,8 @@ static u32 next_or_new_cluster(fat_file file, u32 last_cluster) {
             return 0;
         }
         fat_table_set_next_cluster(file->table, last_cluster, next);
-        fat_table_set_next_cluster(file->table, next, FAT_CLUSTER_END_OF_CHAIN_MAX);
+        fat_table_set_next_cluster(file->table, next,
+                                   FAT_CLUSTER_END_OF_CHAIN_MAX);
         if (errno != 0) {
             return 0;
         }
@@ -525,9 +529,8 @@ static u32 next_or_new_cluster(fat_file file, u32 last_cluster) {
     return next;
 }
 
-ssize_t fat_file_pwrite(fat_file file, const void *buf,
-                                          size_t size, off_t offset,
-                                          fat_file parent) {
+ssize_t fat_file_pwrite(fat_file file, const void *buf, size_t size,
+                        off_t offset, fat_file parent) {
     u32 cluster = 0;
     ssize_t bytes_written_cluster = 0, bytes_remaining = size;
     ssize_t bytes_to_write_cluster = 0;

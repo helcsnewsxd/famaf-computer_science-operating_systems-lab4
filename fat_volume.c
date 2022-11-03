@@ -294,7 +294,8 @@ static int map_fat(fat_volume vol, int fd, int mount_flags) {
 /* Creates the new instance of file_tree associated to @vol and initializes it
  * with the root directory "/" */
 static fat_volume init_file_tree(fat_volume vol) {
-    fat_file root_dir = fat_file_init_orphan_dir("/", vol->table, vol->root_dir_start_cluster);
+    fat_file root_dir =
+        fat_file_init_orphan_dir("/", vol->table, vol->root_dir_start_cluster);
     if (root_dir == NULL) {
         free(vol->table);
         free(vol);
@@ -306,9 +307,7 @@ static fat_volume init_file_tree(fat_volume vol) {
 }
 
 /* Retrieve the currently mounted FAT volume from the FUSE context. */
-fat_volume get_fat_volume() {
-    return fuse_get_context()->private_data;
-}
+fat_volume get_fat_volume() { return fuse_get_context()->private_data; }
 
 fat_volume fat_volume_mount(const char *volume, int mount_flags) {
     fat_volume vol = NULL;
@@ -326,7 +325,6 @@ fat_volume fat_volume_mount(const char *volume, int mount_flags) {
         free(vol);
         return vol;
     }
-
 
     if (mount_flags & FAT_MOUNT_FLAG_READWRITE) {
         open_flags = O_RDWR;
