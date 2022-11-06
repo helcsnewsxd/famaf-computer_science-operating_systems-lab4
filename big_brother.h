@@ -1,8 +1,8 @@
 #ifndef _BIG_BROTHER_H
 #define _BIG_BROTHER_H
 
-#define BB_LOG_FILE "/bb/fs.log"
-#define BB_DIRNAME "/bb"
+#define BB_LOG_FILE "/fs.log"
+#define BB_DIRNAME "/"
 #define LOG_FILE_BASENAME "fs"
 #define LOG_FILE_EXTENSION "log"
 
