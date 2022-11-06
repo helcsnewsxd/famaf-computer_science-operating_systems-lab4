@@ -26,17 +26,30 @@
 #define DATE_MESSAGE_SIZE 30
 
 // ----------------------------- LOG FUNCTIONS -----------------------------
+static void fat_fuse_read_children(fat_tree_node dir_node);
 
 static void fat_fuse_log_init() {
     fat_volume vol = get_fat_volume();
-    fat_tree_node file_node = fat_tree_node_search(vol->file_tree, BB_LOG_FILE);
+    fat_tree_node file_node = NULL;
     int error = 0;
 
-    if (file_node) {
-        DEBUG("LOG File already exists");
+    // BB directory
+    fat_tree_node dir_node = fat_tree_node_search(vol->file_tree, BB_DIRNAME);
+    if (dir_node) { // ==> LOG File exists
+        DEBUG("BB Directory exists ==> LOG File must to exists");
+
+        fat_fuse_read_children(dir_node); // Refresh BB Directory
+
+        file_node = fat_tree_node_search(vol->file_tree, BB_LOG_FILE);
+        if (file_node)
+            DEBUG("LOG File already exists");
+        else
+            DEBUG("ERROR --> LOG File doesn't exists");
+
         return;
     }
-    DEBUG("LOG File doesn't exists");
+
+    DEBUG("BB Directory doesn't exists ==> LOG File doesn't exists");
 
     error = fat_fuse_mkdir(BB_DIRNAME, 0);
     if (error)
@@ -49,7 +62,7 @@ static void fat_fuse_log_init() {
     if (file_node)
         DEBUG("LOG File successfully created");
     else
-        DEBUG("LOG File --> Error in creation");
+        DEBUG("ERROR --> LOG File, bad creation");
 }
 
 static void fat_fuse_log_write(char *buf, size_t size) {
