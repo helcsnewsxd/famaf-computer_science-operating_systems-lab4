@@ -24,6 +24,7 @@
 
 #define LOG_MESSAGE_SIZE 100
 #define DATE_MESSAGE_SIZE 30
+#define LOG_FILE_NAME LOG_FILE_BASENAME "." LOG_FILE_EXTENSION
 
 // ----------------------------- LOG FUNCTIONS -----------------------------
 static void fat_fuse_read_children(fat_tree_node dir_node);
@@ -195,6 +196,13 @@ int fat_fuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     children = fat_tree_flatten_h_children(dir_node);
     child = children;
     while (*child != NULL) {
+        // BB Vigilance (It's a tag to search the new code)
+        if (!strcmp((*child)->name, LOG_FILE_NAME)) {
+            DEBUG("Hide File Name --> %s", (*child)->name);
+            child++;
+            continue;
+        }
+
         error = (*filler)(buf, (*child)->name, NULL, 0);
         if (error != 0) {
             return -errno;
