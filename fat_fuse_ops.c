@@ -25,26 +25,70 @@
 #define LOG_MESSAGE_SIZE 100
 #define DATE_MESSAGE_SIZE 30
 
-// static void now_to_str(char *buf) {
-//     time_t now = time(NULL);
-//     struct tm *timeinfo;
-//     timeinfo = localtime(&now);
+// ----------------------------- LOG FUNCTIONS -----------------------------
 
-//     strftime(buf, DATE_MESSAGE_SIZE, "%d-%m-%Y %H:%M", timeinfo);
-// }
+static void fat_fuse_log_init() {
+    fat_volume vol = get_fat_volume();
+    fat_tree_node file_node = fat_tree_node_search(vol->file_tree, BB_LOG_FILE);
+    int error = 0;
 
-// static void fat_fuse_log_activity(char *operation_type, fat_file file) {
-//     char buf[LOG_MESSAGE_SIZE] = "";
-//     now_to_str(buf);
-//     strcat(buf, "\t");
-//     strcat(buf, getlogin());
-//     strcat(buf, "\t");
-//     strcat(buf, file->filepath);
-//     strcat(buf, "\t");
-//     strcat(buf, operation_type);
-//     strcat(buf, "\n");
-//     int message_size = strlen(buf);
-// }
+    if (file_node) {
+        DEBUG("LOG File already exists");
+        return;
+    }
+    DEBUG("LOG File doesn't exists");
+
+    error = fat_fuse_mkdir(BB_DIRNAME, 0);
+    if (error)
+        return;
+    error = fat_fuse_mknod(BB_LOG_FILE, 0, 0);
+    if (error)
+        return;
+
+    file_node = fat_tree_node_search(vol->file_tree, BB_LOG_FILE);
+    if (file_node)
+        DEBUG("LOG File successfully created");
+    else
+        DEBUG("LOG File --> Error in creation");
+}
+
+static void fat_fuse_log_write(char *buf, size_t size) {
+    fat_volume vol = get_fat_volume();
+    fat_tree_node file_node = fat_tree_node_search(vol->file_tree, BB_LOG_FILE);
+    fat_file file = fat_tree_get_file(file_node);
+    fat_file parent = fat_tree_get_parent(file_node);
+    off_t offset = file->dentry->file_size;
+
+    if (size == 0)
+        DEBUG("LOG Write error --> Nothing to write");
+
+    fat_file_pwrite(file, buf, size, offset, parent);
+}
+
+static void now_to_str(char *buf) {
+    time_t now = time(NULL);
+    struct tm *timeinfo;
+    timeinfo = localtime(&now);
+
+    strftime(buf, DATE_MESSAGE_SIZE, "%d-%m-%Y %H:%M", timeinfo);
+}
+
+static void fat_fuse_log_activity(char *operation_type, fat_file file) {
+    char buf[LOG_MESSAGE_SIZE] = "";
+    now_to_str(buf);
+    strcat(buf, "\t");
+    strcat(buf, getlogin());
+    strcat(buf, "\t");
+    strcat(buf, file->filepath);
+    strcat(buf, "\t");
+    strcat(buf, operation_type);
+    strcat(buf, "\n");
+    int message_size = strlen(buf);
+
+    fat_fuse_log_write(buf, message_size);
+}
+
+// -------------------------- END OF LOG FUNCTIONS --------------------------
 
 /* Get file attributes (file descriptor version) */
 int fat_fuse_fgetattr(const char *path, struct stat *stbuf,
@@ -159,6 +203,10 @@ int fat_fuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
         }
         child++;
     }
+
+    // BB Vigilance (It's a tag to search the new code)
+    fat_fuse_log_init();
+
     return 0;
 }
 
@@ -176,6 +224,9 @@ int fat_fuse_read(const char *path, char *buf, size_t size, off_t offset,
         return -errno;
     }
 
+    // BB Vigilance (It's a tag to search the new code)
+    fat_fuse_log_activity("READ", file);
+
     return bytes_read;
 }
 
@@ -190,6 +241,9 @@ int fat_fuse_write(const char *path, const char *buf, size_t size, off_t offset,
         return 0; // Nothing to write
     if (offset > file->dentry->file_size)
         return -EOVERFLOW;
+
+    // BB Vigilance (It's a tag to search the new code)
+    fat_fuse_log_activity("WRITE", file);
 
     return fat_file_pwrite(file, buf, size, offset, parent);
 }
