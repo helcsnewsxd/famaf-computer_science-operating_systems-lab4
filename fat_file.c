@@ -338,9 +338,13 @@ void fat_utime(fat_file file, fat_file parent, const struct utimbuf *buf) {
 
 void fat_file_dentry_add_child(fat_file parent, fat_file child) {
     u32 nentries = parent->dir.nentries;
+
+    u32 ant_var_child = child->pos_in_parent;
     child->pos_in_parent = nentries;
+
     write_dir_entry(parent, child);
     if (errno != 0) {
+        child->pos_in_parent = ant_var_child;
         return;
     }
     DEBUG("Adding child \"%s\" to \"%s\" in position %u", child->name,
