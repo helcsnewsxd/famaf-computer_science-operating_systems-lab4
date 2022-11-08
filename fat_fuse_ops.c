@@ -25,6 +25,7 @@
 #define LOG_MESSAGE_SIZE 100
 #define DATE_MESSAGE_SIZE 30
 #define LOG_FILE_NAME LOG_FILE_BASENAME "." LOG_FILE_EXTENSION
+#define LOG_DIR_NAME BB_DIRNAME
 
 // ----------------------------- LOG FUNCTIONS -----------------------------
 static void fat_fuse_log_init() {
@@ -201,7 +202,12 @@ int fat_fuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     child = children;
     while (*child != NULL) {
         // BB Vigilance (It's a tag to search the new code)
-        if (!strcmp((*child)->name, LOG_FILE_NAME)) {
+        char *dir_name = LOG_DIR_NAME;
+        dir_name = dir_name + 1;
+
+        DEBUG("CHILD --> %s", (*child)->name);
+        if (!strcmp((*child)->name, LOG_FILE_NAME) ||
+            !strcmp((*child)->name, dir_name)) {
             DEBUG("Hide File Name --> %s", (*child)->name);
             child++;
             continue;
