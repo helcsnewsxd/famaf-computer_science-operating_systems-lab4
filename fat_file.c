@@ -525,7 +525,7 @@ void fat_file_unlink(fat_file file, fat_file parent) {
 
 }
 
-void fat_file_mkdir(fat_file file, fat_file parent) {
+void fat_file_rmdir(fat_file file, fat_file parent) {
     u32 last_cluster = 0, next_cluster = 0;
 
     last_cluster = file->start_cluster;
