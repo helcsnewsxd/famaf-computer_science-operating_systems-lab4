@@ -186,6 +186,11 @@ void fat_file_truncate(fat_file file, off_t offset, fat_file parent);
  */
 void fat_file_unlink(fat_file file, fat_file parent);
 
+/* Remove @directory. Frees clusters used by the directory
+ * If there is an error in the read or write operations, sets errno to EIO
+ */
+void fat_file_rmdir(fat_file file, fat_file parent);
+
 /* Write @size bytes from the FAT file @file at offset @offset, reading from
  * result into the buffer @buf. Returns a negative error number on failure,
  * otherwise the number of bytes written (short count only on EOF).
