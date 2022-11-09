@@ -30,12 +30,12 @@ u32 search_bb_orphan_dir_cluster() {
 /* Creates the /bb directory as an orphan and adds it to the file tree as
  * child of root dir.
  */
-// static int bb_create_new_orphan_dir() {
-//     errno = 0;
-//     // ****MOST IMPORTANT PART, DO NOT SAVE DIR ENTRY TO PARENT ****
+static int bb_create_new_orphan_dir() {
+    errno = 0;
+    // ****MOST IMPORTANT PART, DO NOT SAVE DIR ENTRY TO PARENT ****
 
-//     return -errno;
-// }
+    return -errno;
+}
 
 int bb_init_log_dir(u32 start_cluster) {
     errno = 0;
