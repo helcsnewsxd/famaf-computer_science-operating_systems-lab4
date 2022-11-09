@@ -1,4 +1,5 @@
 #include "big_brother.h"
+#include "fat_file.h"
 #include "fat_table.h"
 #include "fat_util.h"
 #include "fat_volume.h"
@@ -39,6 +40,8 @@ u32 find_free_cluster() {
 static int bb_create_new_orphan_dir() {
     errno = 0;
     // ****MOST IMPORTANT PART, DO NOT SAVE DIR ENTRY TO PARENT ****
+    u32 start_cluster = find_free_cluster();
+
     fat_volume vol = NULL;
     fat_tree_node root_node = NULL;
 
@@ -48,6 +51,8 @@ static int bb_create_new_orphan_dir() {
     // normally done.
     fat_file loaded_bb_dir =
         fat_file_init_orphan_dir(BB_DIRNAME, vol->table, start_cluster);
+
+    loaded_bb_dir->dentry->attribs = FILE_ATTRIBUTE_RESERVED;
 
     // Add directory to file tree. It's entries will be like any other dir.
     root_node = fat_tree_node_search(vol->file_tree, "/");
