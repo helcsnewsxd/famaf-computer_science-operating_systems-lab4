@@ -33,6 +33,19 @@ u32 search_bb_orphan_dir_cluster() {
 static int bb_create_new_orphan_dir() {
     errno = 0;
     // ****MOST IMPORTANT PART, DO NOT SAVE DIR ENTRY TO PARENT ****
+    fat_volume vol = NULL;
+    fat_tree_node root_node = NULL;
+
+    vol = get_fat_volume();
+
+    // Create a new file from scratch, instead of using a direntry like
+    // normally done.
+    fat_file loaded_bb_dir =
+        fat_file_init_orphan_dir(BB_DIRNAME, vol->table, start_cluster);
+
+    // Add directory to file tree. It's entries will be like any other dir.
+    root_node = fat_tree_node_search(vol->file_tree, "/");
+    vol->file_tree = fat_tree_insert(vol->file_tree, root_node, loaded_bb_dir);
 
     return -errno;
 }
