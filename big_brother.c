@@ -28,12 +28,6 @@ u32 search_bb_orphan_dir_cluster() {
     return bb_dir_start_cluster;
 }
 
-u32 find_free_cluster() {
-    u32 free_cluster = 0;
-    // TODO
-    return free_cluster;
-}
-
 /* Creates the /bb directory as an orphan and adds it to the file tree as
  * child of root dir.
  */
