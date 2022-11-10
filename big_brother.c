@@ -22,8 +22,20 @@ int bb_is_log_dirpath(char *filepath) {
 /* Searches for a cluster that could correspond to the bb directory and returns
  * its index. If the cluster is not found, returns 0.
  */
-u32 get_cluster_content(fat_table table, u32 cluster) {
+static u32 get_cluster_content(fat_table table, u32 cluster) {
     return le32_to_cpu(((const le32 *)table->fat_map)[cluster]);
+}
+
+static bool bb_has_log_file_as_first_entry(fat_table table, u32 cluster) {
+    int cluster_data_fd = table[cluster].fd;
+    void *buf;
+    // skip two entries (first entries are are . and ..)
+    off_t bytes_to_skip = FAT_DIR_ENTRY_BYTE_SIZE * 2;
+
+    full_pread(cluster_data_fd, buf, FAT_DIR_ENTRY_BYTE_SIZE, bytes_to_skip);
+    fat_dir_entry dir_entry = (fat_dir_entry)buf; // turn buf into fat_dir_entry
+                                                  //
+    return bb_is_log_file_dentry(dir_entry);
 }
 
 u32 search_bb_orphan_dir_cluster(fat_table table) {
@@ -37,7 +49,8 @@ u32 search_bb_orphan_dir_cluster(fat_table table) {
            cluster_not_found) {
         cluster_content = get_cluster_content(table, cluster);
         is_bad = fat_table_cluster_is_bad_sector(cluster_content);
-        correct_first_entry = true; // TODO
+        correct_first_entry = bb_has_log_file_as_first_entry(table, cluster);
+
         if (is_bad && correct_first_entry) {
             bb_dir_start_cluster = cluster;
             cluster_not_found = false;
