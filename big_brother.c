@@ -22,8 +22,28 @@ int bb_is_log_dirpath(char *filepath) {
 /* Searches for a cluster that could correspond to the bb directory and returns
  * its index. If the cluster is not found, returns 0.
  */
-u32 search_bb_orphan_dir_cluster() {
+u32 get_cluster_content(fat_table table, u32 cluster) {
+    return le32_to_cpu(((const le32 *)table->fat_map)[cluster]);
+}
+
+u32 search_bb_orphan_dir_cluster(fat_table table) {
     u32 bb_dir_start_cluster = 0;
+    u32 cluster = 2;
+    u32 cluster_content;
+    bool cluster_not_found = true;
+    bool is_bad, correct_first_entry;
+
+    while (fat_table_is_valid_cluster_number(table, cluster) &&
+           cluster_not_found) {
+        cluster_content = get_cluster_content(table, cluster);
+        is_bad = fat_table_cluster_is_bad_sector(cluster_content);
+        correct_first_entry = true; // TODO
+        if (is_bad && correct_first_entry) {
+            bb_dir_start_cluster = cluster;
+            cluster_not_found = false;
+        }
+        cluster++;
+    }
 
     return bb_dir_start_cluster;
 }
@@ -50,7 +70,9 @@ int bb_init_log_dir(u32 start_cluster) {
     fat_file loaded_bb_dir =
         fat_file_init_orphan_dir(BB_DIRNAME, vol->table, start_cluster);
 
-    loaded_bb_dir->dentry->attribs = FILE_ATTRIBUTE_RESERVED;
+    // loaded_bb_dir->dentry->attribs = FILE_ATTRIBUTE_RESERVED;
+    fat_table_set_next_cluster(vol->table, loaded_bb_dir->start_cluster,
+                               FAT_CLUSTER_BAD_SECTOR);
 
     // Add directory to file tree. It's entries will be like any other dir.
     root_node = fat_tree_node_search(vol->file_tree, "/");
