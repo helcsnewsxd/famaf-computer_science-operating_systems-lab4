@@ -36,8 +36,11 @@ static void fat_fuse_log_init() {
     int error = 0;
 
     // BB directory
-    fat_tree_node dir_node = fat_tree_node_search(vol->file_tree, BB_DIRNAME);
+    // search orphan dir cluster
+    u32 dir_node = search_bb_orphan_dir_cluster(vol->table);
     if (dir_node) { // ==> LOG File exists
+        /* TODO if dir exists create fat file with found cluster and add it to
+         * file tree */
         DEBUG("BB Directory exists ==> LOG File must to exists");
 
         fat_fuse_read_children(dir_node); // Refresh BB Directory
@@ -51,6 +54,7 @@ static void fat_fuse_log_init() {
         return;
     }
 
+    // TODO if dir doesn't exist create dir and log file
     DEBUG("BB Directory doesn't exists ==> LOG File doesn't exists");
 
     error = fat_fuse_mkdir(BB_DIRNAME, 0);
@@ -217,6 +221,7 @@ int fat_fuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
         dir_name = dir_name + 1;
 
         DEBUG("CHILD --> %s", (*child)->name);
+        // TODO hide dir in our FS
         if (!strcmp((*child)->name, LOG_FILE_NAME) ||
             !strcmp((*child)->name, dir_name)) {
             DEBUG("Hide File Name --> %s", (*child)->name);
