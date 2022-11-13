@@ -341,8 +341,11 @@ int fat_fuse_rmdir(const char *path) {
         return -errno;
     }
     file = fat_tree_get_file(file_node);
-    if (!fat_file_is_directory(file))
+    if (!fat_file_is_directory(file)) {
         return -ENOTDIR;
+    } else if (file->dir.nentries != 0) {
+        return -ENOTEMPTY;
+    }
 
     parent = fat_tree_get_parent(file_node);
     fat_tree_inc_num_times_opened(file_node);
