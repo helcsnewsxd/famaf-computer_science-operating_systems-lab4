@@ -76,7 +76,7 @@ u32 search_bb_orphan_dir_cluster(fat_table table) {
 //     return -errno;
 // }
 
-int bb_init_log_dir(u32 start_cluster) {
+int bb_init_log_dir() {
     errno = 0;
 
     fat_volume vol = NULL;
@@ -84,14 +84,18 @@ int bb_init_log_dir(u32 start_cluster) {
 
     vol = get_fat_volume();
 
+    u32 bb_cluster = search_bb_orphan_dir_cluster(vol->table);
+
+    if (!bb_cluster) { // orphan dir does not exist
+        bb_cluster = fat_table_get_next_free_cluster(vol->table);
+        fat_table_set_next_cluster(vol->table, bb_cluster,
+                                   FAT_CLUSTER_BAD_SECTOR);
+    }
+
     // Create a new file from scratch, instead of using a direntry like
     // normally done.
     fat_file loaded_bb_dir =
-        fat_file_init_orphan_dir(BB_DIRNAME, vol->table, start_cluster);
-
-    // loaded_bb_dir->dentry->attribs = FILE_ATTRIBUTE_RESERVED;
-    fat_table_set_next_cluster(vol->table, loaded_bb_dir->start_cluster,
-                               FAT_CLUSTER_BAD_SECTOR);
+        fat_file_init_orphan_dir(BB_DIRNAME, vol->table, bb_cluster);
 
     // Add directory to file tree. It's entries will be like any other dir.
     root_node = fat_tree_node_search(vol->file_tree, "/");

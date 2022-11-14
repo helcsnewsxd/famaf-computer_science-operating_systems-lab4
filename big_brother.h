@@ -16,6 +16,6 @@ int bb_is_log_dirpath(char *filepath);
 
 u32 search_bb_orphan_dir_cluster();
 
-int bb_init_log_dir(u32 start_cluster);
+int bb_init_log_dir();
 
 #endif
