@@ -50,6 +50,8 @@ struct fuse_operations fat_fuse_operations = {
     .releasedir = fat_fuse_releasedir,
     .utime = fat_fuse_utime,
     .truncate = fat_fuse_truncate,
+    .unlink = fat_fuse_unlink,
+    .rmdir = fat_fuse_rmdir,
     .write = fat_fuse_write,
 };
 

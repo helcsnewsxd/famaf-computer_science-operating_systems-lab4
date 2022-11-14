@@ -174,11 +174,22 @@ GList *fat_file_read_children(fat_file dir);
 ssize_t fat_file_pread(fat_file file, void *buf, size_t size, off_t offset,
                        fat_file parent);
 
+
 /* Truncates @file to @offset bytes. Frees unused clusters and sets new file
  * size. If offset is greater than file size, no operation is performed.
  * If there is an error in the read or write operations, sets errno to EIO
  */
 void fat_file_truncate(fat_file file, off_t offset, fat_file parent);
+
+/* Remove @file. Frees clusters used by the file
+ * If there is an error in the read or write operations, sets errno to EIO
+ */
+void fat_file_unlink(fat_file file, fat_file parent);
+
+/* Remove @directory. Frees clusters used by the directory
+ * If there is an error in the read or write operations, sets errno to EIO
+ */
+void fat_file_rmdir(fat_file file, fat_file parent);
 
 /* Write @size bytes from the FAT file @file at offset @offset, reading from
  * result into the buffer @buf. Returns a negative error number on failure,

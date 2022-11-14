@@ -510,6 +510,51 @@ void fat_file_truncate(fat_file file, off_t offset, fat_file parent) {
     write_dir_entry(parent, file);
 }
 
+void fat_file_unlink(fat_file file, fat_file parent) {
+    u32 last_cluster = 0, next_cluster = 0;
+
+    last_cluster = file->start_cluster;
+
+    // Mark all clusters as not used
+    while (fat_table_cluster_is_valid(last_cluster)) {
+        // If there was an error, we continue with the function.
+        next_cluster = fat_table_get_next_cluster(file->table, last_cluster);
+        fat_table_set_next_cluster(file->table, last_cluster, FAT_CLUSTER_FREE);
+        last_cluster = next_cluster;
+    }
+
+    // Update entrance in directory
+    file->dentry->base_name[0] = FAT_FILENAME_DELETED_CHAR;
+    fill_dentry_time_now(file->dentry, false, true);
+    write_dir_entry(parent, file);
+
+}
+
+void fat_file_rmdir(fat_file file, fat_file parent) {
+    u32 last_cluster = 0, next_cluster = 0;
+
+    last_cluster = file->start_cluster;
+
+    // Mark all clusters as not used
+    while (fat_table_cluster_is_valid(last_cluster)) {
+        // If there was an error, we continue with the function.
+        next_cluster = fat_table_get_next_cluster(file->table, last_cluster);
+        fat_table_set_next_cluster(file->table, last_cluster, FAT_CLUSTER_FREE);
+        last_cluster = next_cluster;
+    }
+
+    last_cluster = file_start_cluster(file->dentry);
+    if (fat_table_cluster_is_valid(last_cluster)){
+        fat_table_set_next_cluster(file->table, last_cluster, FAT_CLUSTER_FREE);
+    }
+
+    // Update entrance in directory
+    file->dentry->base_name[0] = FAT_FILENAME_DELETED_CHAR;
+    fill_dentry_time_now(file->dentry, false, true);
+    write_dir_entry(parent, file);
+
+}
+
 /* Returns the next cluster in the file, or adds a new one if EOC is reach.
  * If no free cluster can be found, or the FAT table can't be written,
  * errno is set to -EIO and 0 is returned.
