@@ -472,6 +472,15 @@ ssize_t fat_file_pread(fat_file file, void *buf, size_t size, off_t offset,
     return size - bytes_remaining;
 }
 
+void fat_file_init_dir_cluster(fat_file dir) {
+    // Borrar la dentry del archivo en el disco
+    size_t entry_size = sizeof(struct fat_dir_entry_s);
+    off_t dir_offset = fat_table_cluster_offset(dir->table, dir->start_cluster);
+    u32 *buf = alloca(entry_size);
+    *buf = 0;
+    pwrite(dir->table->fd, buf, entry_size, dir_offset);
+}
+
 void fat_file_truncate(fat_file file, off_t offset, fat_file parent) {
     u32 last_cluster = 0, next_cluster = 0;
 
@@ -527,7 +536,6 @@ void fat_file_unlink(fat_file file, fat_file parent) {
     file->dentry->base_name[0] = FAT_FILENAME_DELETED_CHAR;
     fill_dentry_time_now(file->dentry, false, true);
     write_dir_entry(parent, file);
-
 }
 
 void fat_file_rmdir(fat_file file, fat_file parent) {
@@ -544,7 +552,7 @@ void fat_file_rmdir(fat_file file, fat_file parent) {
     }
 
     last_cluster = file_start_cluster(file->dentry);
-    if (fat_table_cluster_is_valid(last_cluster)){
+    if (fat_table_cluster_is_valid(last_cluster)) {
         fat_table_set_next_cluster(file->table, last_cluster, FAT_CLUSTER_FREE);
     }
 
@@ -552,7 +560,6 @@ void fat_file_rmdir(fat_file file, fat_file parent) {
     file->dentry->base_name[0] = FAT_FILENAME_DELETED_CHAR;
     fill_dentry_time_now(file->dentry, false, true);
     write_dir_entry(parent, file);
-
 }
 
 /* Returns the next cluster in the file, or adds a new one if EOC is reach.

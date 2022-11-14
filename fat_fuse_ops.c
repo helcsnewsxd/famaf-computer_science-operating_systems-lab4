@@ -320,6 +320,7 @@ int fat_fuse_mkdir(const char *path, mode_t mode) {
     vol->file_tree = fat_tree_insert(vol->file_tree, parent_node, new_file);
     // write file in parent's entry (disk)
     fat_file_dentry_add_child(parent, new_file);
+    fat_file_init_dir_cluster(new_file);
     return -errno;
 }
 
