@@ -30,7 +30,7 @@ static u32 get_cluster_content(fat_table table, u32 cluster) {
 static fat_dir_entry get_first_dentry_from_cluster(fat_table table,
                                                    u32 cluster) {
     int cluster_data_fd = table[cluster].fd;
-    void *buf;
+    void *buf = 0;
     // skip two entries (first entries are are . and ..)
     off_t bytes_to_skip = FAT_DIR_ENTRY_BYTE_SIZE * 2;
 

@@ -35,9 +35,7 @@ static void fat_fuse_log_init() {
     fat_tree_node file_node = NULL;
     int error = 0;
 
-    // Create or initialize bb dir and add it to fat_tree
-    bb_init_log_dir();
-
+    // BB directory
     fat_tree_node dir_node = fat_tree_node_search(vol->file_tree, BB_DIRNAME);
     if (dir_node) { // ==> LOG File exists
         DEBUG("BB Directory exists ==> LOG File must to exists");
