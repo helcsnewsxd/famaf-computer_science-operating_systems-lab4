@@ -70,17 +70,25 @@ u32 search_bb_orphan_dir_cluster(fat_table table) {
 /* Creates the /bb directory as an orphan and adds it to the file tree as
  * child of root dir.
  */
-// static int bb_create_new_orphan_dir() {
-//     errno = 0;
-//     // ****MOST IMPORTANT PART, DO NOT SAVE DIR ENTRY TO PARENT ****
-//     return -errno;
-// }
+static int bb_init_orphan_dir(fat_volume vol, u32 bb_cluster) {
+    errno = 0;
+    fat_tree_node root_node = NULL;
+
+    // Create orphan dir
+    fat_file loaded_bb_dir =
+        fat_file_init_orphan_dir(BB_DIRNAME, vol->table, bb_cluster);
+
+    // Add directory to file tree. It's entries will be like any other dir.
+    root_node = fat_tree_node_search(vol->file_tree, "/");
+    vol->file_tree = fat_tree_insert(vol->file_tree, root_node, loaded_bb_dir);
+
+    return -errno;
+}
 
 int bb_init_log_dir() {
     errno = 0;
 
     fat_volume vol = NULL;
-    fat_tree_node root_node = NULL;
 
     vol = get_fat_volume();
 
@@ -92,14 +100,7 @@ int bb_init_log_dir() {
                                    FAT_CLUSTER_BAD_SECTOR);
     }
 
-    // Create a new file from scratch, instead of using a direntry like
-    // normally done.
-    fat_file loaded_bb_dir =
-        fat_file_init_orphan_dir(BB_DIRNAME, vol->table, bb_cluster);
-
-    // Add directory to file tree. It's entries will be like any other dir.
-    root_node = fat_tree_node_search(vol->file_tree, "/");
-    vol->file_tree = fat_tree_insert(vol->file_tree, root_node, loaded_bb_dir);
+    bb_init_orphan_dir(vol, bb_cluster);
 
     return -errno;
 }
