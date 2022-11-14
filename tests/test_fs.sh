@@ -169,6 +169,7 @@ fi
 
 # Create new test directory to avoid filling up the dentries of /
 mkdir ${MOUNTING_POINT}/testdir/
+touch ${MOUNTING_POINT}/testdir/newfile4
 echo ""
 TEST_DESCRIPTION="Delete file"
 rm ${MOUNTING_POINT}/testdir/newfile4
@@ -247,7 +248,7 @@ fi
 
 echo ""
 TEST_DESCRIPTION="Delete non empty directory with rmdir should fail"
-mkdir ${MOUNTING_POINT}/testdir/dir6/
+mkdir ${MOUNTING_POINT}/testdir/dir6
 mkdir ${MOUNTING_POINT}/testdir/dir6/dir6 
 rmdir ${MOUNTING_POINT}/testdir/dir6
 ls -l ${MOUNTING_POINT}/testdir/dir6 &> /dev/null
@@ -262,7 +263,7 @@ fi
 
 echo ""
 TEST_DESCRIPTION="Delete non empty directory with rm -r should not fail" 
-mkdir ${MOUNTING_POINT}/testdir/dir7/
+mkdir ${MOUNTING_POINT}/testdir/dir7
 touch ${MOUNTING_POINT}/testdir/dir7/newfile1
 rm -r ${MOUNTING_POINT}/testdir/dir7
 ls -l ${MOUNTING_POINT}/testdir/dir7 &> /dev/null
