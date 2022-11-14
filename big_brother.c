@@ -1,6 +1,7 @@
 #include "big_brother.h"
 #include "fat_file.h"
 #include "fat_table.h"
+#include "fat_types.h"
 #include "fat_util.h"
 #include "fat_volume.h"
 #include <stdio.h>
@@ -26,15 +27,20 @@ static u32 get_cluster_content(fat_table table, u32 cluster) {
     return le32_to_cpu(((const le32 *)table->fat_map)[cluster]);
 }
 
-static bool bb_has_log_file_as_first_entry(fat_table table, u32 cluster) {
+static fat_dir_entry get_first_dentry_from_cluster(fat_table table,
+                                                   u32 cluster) {
     int cluster_data_fd = table[cluster].fd;
     void *buf;
     // skip two entries (first entries are are . and ..)
     off_t bytes_to_skip = FAT_DIR_ENTRY_BYTE_SIZE * 2;
 
     full_pread(cluster_data_fd, buf, FAT_DIR_ENTRY_BYTE_SIZE, bytes_to_skip);
-    fat_dir_entry dir_entry = (fat_dir_entry)buf; // turn buf into fat_dir_entry
-                                                  //
+
+    return (fat_dir_entry)buf; // turn buf into fat_dir_entry
+}
+
+static bool bb_has_log_file_as_first_entry(fat_table table, u32 cluster) {
+    fat_dir_entry dir_entry = get_first_dentry_from_cluster(table, cluster);
     return bb_is_log_file_dentry(dir_entry);
 }
 
