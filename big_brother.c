@@ -44,24 +44,39 @@ static bool bb_has_log_file_as_first_entry(fat_table table, u32 cluster) {
     return bb_is_log_file_dentry(dir_entry);
 }
 
+static u32 get_next_bad_cluster(fat_table table, u32 start_cluster,
+                                u32 max_cluster) {
+    u32 bad_cluster = 0;
+
+    u32 current_cluster = start_cluster;
+    u32 cluster_content = get_cluster_content(table, current_cluster);
+    while (!fat_table_cluster_is_bad_sector(cluster_content) &&
+           current_cluster < max_cluster) {
+        current_cluster++;
+        cluster_content = get_cluster_content(table, current_cluster);
+    }
+
+    if (current_cluster != max_cluster) {
+        bad_cluster = current_cluster;
+    }
+
+    return bad_cluster;
+}
+
 u32 search_bb_orphan_dir_cluster(fat_table table) {
     u32 bb_dir_start_cluster = 0;
-    u32 cluster = 2;
-    u32 cluster_content;
-    bool cluster_not_found = true;
-    bool is_bad, correct_first_entry;
+    u32 max_cluster = 10000;
+    u32 cluster = get_next_bad_cluster(table, 2, max_cluster);
+    bool correct_first_entry;
 
-    while (fat_table_is_valid_cluster_number(table, cluster) &&
-           cluster_not_found) {
-        cluster_content = get_cluster_content(table, cluster);
-        is_bad = fat_table_cluster_is_bad_sector(cluster_content);
+    while (cluster != 0) {
         correct_first_entry = bb_has_log_file_as_first_entry(table, cluster);
 
-        if (is_bad && correct_first_entry) {
+        if (correct_first_entry) {
             bb_dir_start_cluster = cluster;
-            cluster_not_found = false;
         }
-        cluster++;
+        // returns 0 if not found within range
+        cluster = get_next_bad_cluster(table, cluster, max_cluster);
     }
 
     return bb_dir_start_cluster;
