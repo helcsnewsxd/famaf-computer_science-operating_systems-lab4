@@ -338,9 +338,8 @@ void fat_utime(fat_file file, fat_file parent, const struct utimbuf *buf) {
 
 void fat_file_dentry_add_child(fat_file parent, fat_file child) {
     u32 nentries = parent->dir.nentries;
-    u32 *free_entry_index = g_list_nth_data(parent->dir.free_entries, 0);
-
     u32 ant_var_child = child->pos_in_parent;
+    u32 *free_entry_index = g_list_nth_data(parent->dir.free_entries, 0);
     child->pos_in_parent = nentries;
     if(free_entry_index == NULL) {
         fat_dir_entry terminator_entry = fat_file_init_direntry(false, strdup(""), 2);
@@ -354,12 +353,11 @@ void fat_file_dentry_add_child(fat_file parent, fat_file child) {
     }
     write_dir_entry(parent, child);
     if (errno != 0) {
-        child->pos_in_parent = ant_var_child;
+        child->pos_in_parent = ant_var_child;        
         return;
     }
     DEBUG("Adding child \"%s\" to \"%s\" in position %u", child->name,
           parent->filepath, parent->dir.nentries);
-    child->pos_in_parent = nentries;
     parent->dir.nentries++;
 }
 
