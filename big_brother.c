@@ -66,16 +66,18 @@ u32 search_bb_orphan_dir_cluster(fat_table table) {
     u32 bb_dir_start_cluster = 0;
     u32 max_cluster = 10000;
     u32 cluster = get_next_bad_cluster(table, 2, max_cluster);
-    bool correct_first_entry;
+    bool keep_looking_for_cluster = true, correct_first_entry;
 
-    while (cluster != 0) {
+    while (cluster != 0 && keep_looking_for_cluster) {
+
         correct_first_entry = bb_has_log_file_as_first_entry(table, cluster);
-
         if (correct_first_entry) {
             bb_dir_start_cluster = cluster;
+            keep_looking_for_cluster = false;
+        } else {
+            // returns 0 if not found within range
+            cluster = get_next_bad_cluster(table, cluster, max_cluster);
         }
-        // returns 0 if not found within range
-        cluster = get_next_bad_cluster(table, cluster, max_cluster);
     }
 
     return bb_dir_start_cluster;
