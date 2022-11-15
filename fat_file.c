@@ -297,6 +297,31 @@ void fat_file_to_stbuf(fat_file file, struct stat *stbuf) {
 
 /********************* DIRECTORY ENTRY METADATA *********************/
 
+/* Returns the next cluster in the file, or adds a new one if EOC is reach.
+ * If no free cluster can be found, or the FAT table can't be written,
+ * errno is set to -EIO and 0 is returned.
+ * FIXME this could be a fat_table operation.
+ */
+static u32 next_or_new_cluster(fat_file file, u32 last_cluster) {
+    u32 next = fat_table_get_next_cluster(file->table, last_cluster);
+    if (fat_table_cluster_is_EOC(next)) {
+        DEBUG("Adding new cluster to file");
+        next = fat_table_get_next_free_cluster(file->table);
+        if (fat_table_cluster_is_EOC(next)) {
+            errno = EIO;
+            return 0;
+        }
+        fat_table_set_next_cluster(file->table, last_cluster, next);
+        fat_table_set_next_cluster(file->table, next,
+                                   FAT_CLUSTER_END_OF_CHAIN_MAX);
+        if (errno != 0) {
+            return 0;
+        }
+    }
+    return next;
+}
+
+
 /* Writes to disk @child_disk_entry, in the position @nentry of the @parent*/
 static void write_dir_entry(fat_file parent, fat_file file) {
     // Calculate the starting position of the directory
@@ -304,7 +329,7 @@ static void write_dir_entry(fat_file parent, fat_file file) {
     size_t entry_size = sizeof(struct fat_dir_entry_s);
     u32 cluster_to_use = parent->start_cluster;
     u32 used_size = chunk_size;
-    while (chunk_size <= file->pos_in_parent * entry_size) {
+    while (used_size <= file->pos_in_parent * entry_size) {
         DEBUG("The parent directory is full. Adding new cluster");
         cluster_to_use = next_or_new_cluster(file, cluster_to_use);
         used_size += chunk_size;
@@ -577,29 +602,6 @@ void fat_file_rmdir(fat_file file, fat_file parent) {
     write_dir_entry(parent, file);
 }
 
-/* Returns the next cluster in the file, or adds a new one if EOC is reach.
- * If no free cluster can be found, or the FAT table can't be written,
- * errno is set to -EIO and 0 is returned.
- * FIXME this could be a fat_table operation.
- */
-static u32 next_or_new_cluster(fat_file file, u32 last_cluster) {
-    u32 next = fat_table_get_next_cluster(file->table, last_cluster);
-    if (fat_table_cluster_is_EOC(next)) {
-        DEBUG("Adding new cluster to file");
-        next = fat_table_get_next_free_cluster(file->table);
-        if (fat_table_cluster_is_EOC(next)) {
-            errno = EIO;
-            return 0;
-        }
-        fat_table_set_next_cluster(file->table, last_cluster, next);
-        fat_table_set_next_cluster(file->table, next,
-                                   FAT_CLUSTER_END_OF_CHAIN_MAX);
-        if (errno != 0) {
-            return 0;
-        }
-    }
-    return next;
-}
 
 ssize_t fat_file_pwrite(fat_file file, const void *buf, size_t size,
                         off_t offset, fat_file parent) {
