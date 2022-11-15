@@ -79,8 +79,6 @@ struct fat_file_s {
             // ones). It also marks the position of the first free space for a
             // dir_entry.
             u32 nentries;
-            // Unused entry indices' list 
-            GList *free_entries;
         } dir;
         // Valid only for non-directory files
         struct {

@@ -338,21 +338,9 @@ void fat_utime(fat_file file, fat_file parent, const struct utimbuf *buf) {
 
 void fat_file_dentry_add_child(fat_file parent, fat_file child) {
     u32 nentries = parent->dir.nentries;
-    u32 *free_entry_index = g_list_nth_data(parent->dir.free_entries, 0);
     child->pos_in_parent = nentries;
-    if(free_entry_index == NULL) {
-        child->pos_in_parent = nentries;
-        fat_dir_entry terminator_entry = fat_file_init_direntry(false, strdup(""), 2);
-        terminator_entry->base_name[0] = '\0';
-        fat_file aux_terminator_file = init_file_from_dentry(terminator_entry, parent);
-        aux_terminator_file->pos_in_parent = child->pos_in_parent + 1;
-        write_dir_entry(parent, aux_terminator_file);
-        fat_file_destroy(aux_terminator_file);
-    } else {
-        child->pos_in_parent = *free_entry_index;
-    }
     write_dir_entry(parent, child);
-    if (errno != 0) {      
+    if (errno != 0) {
         return;
     }
     DEBUG("Adding child \"%s\" to \"%s\" in position %u", child->name,
@@ -394,9 +382,6 @@ static void read_cluster_dir_entries(u8 *buffer, fat_dir_entry end_ptr,
             break;
         }
         if (ignore_dentry(disk_dentry_ptr)) {
-            u32 *free_entry_index = malloc(sizeof(u32));
-            *free_entry_index = dir_entries_processed;
-            dir->dir.free_entries = g_list_append(dir->dir.free_entries, free_entry_index);
             continue;
         }
         // Create and fill new child structure
