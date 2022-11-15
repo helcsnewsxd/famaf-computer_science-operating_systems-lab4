@@ -50,6 +50,11 @@ u32 search_bb_orphan_dir_cluster() {
     bool keep_looking_for_cluster = true, correct_first_entry;
 
     while (keep_looking_for_cluster && cluster != max_cluster) {
+        if (!funciondeltadparaverqueseabad(cluster)) {
+            cluster++;
+            continue;
+        }
+
         correct_first_entry = bb_has_log_file_as_first_entry(table, cluster);
         if (correct_first_entry) {
             DEBUG("Found bb_dir_start_cluster --> %u\n", cluster);
