@@ -44,8 +44,6 @@ u32 search_bb_orphan_dir_cluster() {
     fat_volume vol = get_fat_volume();
     fat_table table = vol->table;
 
-    fat_table_print(table, 3, 200);
-
     u32 bb_dir_start_cluster = 0;
 
     u32 cluster = 3, max_cluster = 6e3;
