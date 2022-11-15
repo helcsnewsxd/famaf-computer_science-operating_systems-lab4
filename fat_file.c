@@ -301,16 +301,20 @@ void fat_file_to_stbuf(fat_file file, struct stat *stbuf) {
 static void write_dir_entry(fat_file parent, fat_file file) {
     // Calculate the starting position of the directory
     u32 chunk_size = fat_table_bytes_per_cluster(parent->table);
-    off_t parent_offset =
-        fat_table_cluster_offset(parent->table, parent->start_cluster);
     size_t entry_size = sizeof(struct fat_dir_entry_s);
-    if (chunk_size <= file->pos_in_parent * entry_size) {
-        errno = ENOSPC; // TODO we should add a new cluster to the directory.
-        DEBUG("The parent directory is full.");
-        return;
+    u32 cluster_to_use = parent->start_cluster;
+    u32 used_size = chunk_size;
+    while (chunk_size <= file->pos_in_parent * entry_size) {
+        DEBUG("The parent directory is full. Adding new cluster");
+        cluster_to_use = next_or_new_cluster(file, cluster_to_use);
+        used_size += chunk_size;
     }
     DEBUG("Writting dentry on directory %s, entry %u", parent->name,
           file->pos_in_parent);
+
+    off_t parent_offset =
+        fat_table_cluster_offset(parent->table, parent->start_cluster);
+
     // Calculate the position of the next entry
     off_t entry_offset =
         (off_t)(file->pos_in_parent * entry_size) + parent_offset;
