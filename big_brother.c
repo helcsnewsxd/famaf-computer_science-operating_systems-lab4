@@ -30,9 +30,8 @@ static u32 get_cluster_content(fat_table table, u32 cluster) {
 static fat_dir_entry get_first_dentry_from_cluster(fat_table table,
                                                    u32 cluster) {
     int cluster_data_fd = table[cluster].fd;
-    void *buf = NULL;
-    // skip two entries (first entries are are . and ..)
-    off_t bytes_to_skip = FAT_DIR_ENTRY_BYTE_SIZE * 2;
+    void *buf = alloca(FAT_DIR_ENTRY_BYTE_SIZE);
+    off_t bytes_to_skip = fat_table_cluster_offset(table, cluster);
 
     full_pread(cluster_data_fd, buf, FAT_DIR_ENTRY_BYTE_SIZE, bytes_to_skip);
 
