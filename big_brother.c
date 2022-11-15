@@ -6,7 +6,6 @@
 #include "fat_volume.h"
 #include <stdio.h>
 #include <string.h>
-
 int bb_is_log_file_dentry(fat_dir_entry dir_entry) {
     return strncmp(LOG_FILE_BASENAME, (char *)(dir_entry->base_name), 3) == 0 &&
            strncmp(LOG_FILE_EXTENSION, (char *)(dir_entry->extension), 3) == 0;
@@ -43,6 +42,7 @@ static bool bb_has_log_file_as_first_entry(fat_table table, u32 cluster) {
     return bb_is_log_file_dentry(dir_entry);
 }
 
+// [start_cluster, max_cluster) --> interval notation
 static u32 get_next_bad_cluster(fat_table table, u32 start_cluster,
                                 u32 max_cluster) {
     u32 bad_cluster = 0;
@@ -72,13 +72,17 @@ u32 search_bb_orphan_dir_cluster(fat_table table) {
 
         correct_first_entry = bb_has_log_file_as_first_entry(table, cluster);
         if (correct_first_entry) {
+            DEBUG("Found bb_dir_start_cluster --> %u\n", cluster);
             bb_dir_start_cluster = cluster;
             keep_looking_for_cluster = false;
         } else {
             // returns 0 if not found within range
-            cluster = get_next_bad_cluster(table, cluster, max_cluster);
+            cluster = get_next_bad_cluster(table, cluster + 1, max_cluster);
         }
     }
+
+    if (!bb_dir_start_cluster)
+        DEBUG("bb_dir_start_cluster NOT found");
 
     return bb_dir_start_cluster;
 }
