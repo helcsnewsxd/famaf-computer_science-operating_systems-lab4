@@ -50,7 +50,7 @@ u32 search_bb_orphan_dir_cluster() {
     bool keep_looking_for_cluster = true, correct_first_entry;
 
     while (keep_looking_for_cluster && cluster != max_cluster) {
-        if (!funciondeltadparaverqueseabad(cluster)) {
+        if (!fat_table_is_next_cluster_bad_sector(table, cluster)) {
             cluster++;
             continue;
         }
