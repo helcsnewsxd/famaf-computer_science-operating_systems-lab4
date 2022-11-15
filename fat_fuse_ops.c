@@ -39,32 +39,27 @@ static void fat_fuse_log_init() {
     bb_init_log_dir();
 
     fat_tree_node dir_node = fat_tree_node_search(vol->file_tree, BB_DIRNAME);
-    if (dir_node) { // ==> LOG File exists
-        DEBUG("BB Directory exists ==> LOG File must to exists");
+    if (dir_node) { // ==> LOG Dir exists
+        DEBUG("BB Directory exists");
 
         fat_fuse_read_children(dir_node); // Refresh BB Directory
 
         file_node = fat_tree_node_search(vol->file_tree, BB_LOG_FILE);
         if (file_node)
             DEBUG("LOG File already exists");
-        else
-            DEBUG("ERROR --> LOG File doesn't exists");
-
-        return;
+        else {
+            DEBUG("LOG File doesn't exist");
+            error = fat_fuse_mknod(BB_LOG_FILE, 0, 0);
+            if (error)
+                return;
+        }
+    } else {
+        DEBUG("ERROR --> BB dir should exist\n");
     }
-
-    DEBUG("BB Directory doesn't exists ==> LOG File doesn't exists");
-
-    error = fat_fuse_mkdir(BB_DIRNAME, 0);
-    if (error)
-        return;
-    error = fat_fuse_mknod(BB_LOG_FILE, 0, 0);
-    if (error)
-        return;
 
     file_node = fat_tree_node_search(vol->file_tree, BB_LOG_FILE);
     if (file_node)
-        DEBUG("LOG File successfully created");
+        DEBUG("LOG File is present");
     else
         DEBUG("ERROR --> LOG File, bad creation");
 }
