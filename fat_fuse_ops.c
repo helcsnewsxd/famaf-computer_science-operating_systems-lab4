@@ -35,9 +35,6 @@ static void fat_fuse_log_init() {
     fat_tree_node file_node = NULL;
     int error = 0;
 
-    // Create or initialize bb dir and add it to fat_tree
-    bb_init_log_dir();
-
     fat_tree_node dir_node = fat_tree_node_search(vol->file_tree, BB_DIRNAME);
     if (dir_node) { // ==> LOG Dir exists
         DEBUG("BB Directory exists");
@@ -49,12 +46,17 @@ static void fat_fuse_log_init() {
             DEBUG("LOG File already exists");
         else {
             DEBUG("LOG File doesn't exist");
-            error = fat_fuse_mknod(BB_LOG_FILE, 0, 0);
-            if (error)
-                return;
         }
     } else {
-        DEBUG("ERROR --> BB dir should exist\n");
+        // Create or initialize bb dir and add it to fat_tree
+        DEBUG("HAY QUE INICIALIZAR EL BB PORQUE RECIEN AHORA ESTOY MONTANDO EL "
+              "SISTEMA\n");
+        bb_init_log_dir();
+
+        DEBUG("CREO EL LOG FILE");
+        error = fat_fuse_mknod(BB_LOG_FILE, 0, 0);
+        if (error)
+            return;
     }
 
     file_node = fat_tree_node_search(vol->file_tree, BB_LOG_FILE);
