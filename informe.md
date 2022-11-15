@@ -23,8 +23,15 @@ AUN NO SABEMOS A QUE SE DEBE ESTA DISCREPANCIA
 
 # (4) Cuando se ejecuta el comando como ls -l, el sistema operativo, ¿llama a algún programa de usuario? ¿A alguna llamada al sistema? ¿Cómo se conecta esto con FUSE? ¿Qué funciones de su código se ejecutan finalmente?
 
+1) El programa ls realiza varias llamadas al sistema, entre ellas **stat** (para obtener los metadatos de los archivo), **opendir** y **readdir** (para abrir y leer el directorio). 
+2) Esas llamadas a sistema van a kernel, donde el sistema operativo, al ver que el volumen está montado al VFS con FUSE, le transfiere la llamada a sistema al FUSE, que busca en la estructura *fuse_operations* la función correspondiente a cada llamada a sistema.
+3) Se ejecuta en modo usuario la función que nosotros implementamos para poder realizar esa llamada a sistema. En este caso, se ejecutan las funciones **fat_fuse_getattr**, **fat_fuse_opendir** y **fat_fuse_readdir** para las llamadas a sistema **stat**, **opendir** y **readdir** respectivamente, devolviendo su resultado a FUSE, que a su vez se lo entrega al SO y el SO se encarga de darselo a ls para que el programa funcione correctamente.
+
 
 # (5) ¿Por qué tienen que escribir las entradas de directorio manualmente pero no tienen que guardar la tabla FAT cada vez que la modifican?
 
 
-# (5) Para los sistemas de archivos FAT32, la tabla FAT, ¿siempre tiene el mismo tamaño? En caso de que sí, ¿qué tamaño tiene?
+# (6) Para los sistemas de archivos FAT32, la tabla FAT, ¿siempre tiene el mismo tamaño? En caso de que sí, ¿qué tamaño tiene?
+La tabla FAT no tiene siempre el mismo tamaño, el tamaño depende de la cantidad de clusters que tenga el sistema archivos, lo cual depende del tamaño del dispositivo o la imagen en la cual estemos utilizando el sistema de archivos FAT. Lo que sí sucede es que mantiene su tamaño una vez el sistema de archivos FAT está implementado en el dispositivo o la imagen, no es una estructura que crezca o decrezca de tamaño.
+
+El tamaño de la tabla FAT es (aproximadamente) 4 bytes * cantidad de clusters del sistema de archivos. Por ejemplo, supongamos que el sector de datos es de 64 GB, con clusters de 512 bytes, entonces la tabla fat ocupa 4B * (64GB/512B) = 512 MB aproximadamente
