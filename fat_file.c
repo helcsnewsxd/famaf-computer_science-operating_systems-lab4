@@ -338,20 +338,10 @@ void fat_utime(fat_file file, fat_file parent, const struct utimbuf *buf) {
 
 void fat_file_dentry_add_child(fat_file parent, fat_file child) {
     u32 nentries = parent->dir.nentries;
-    u32 *free_entry_index = g_list_nth_data(parent->dir.free_entries, 0);
 
     u32 ant_var_child = child->pos_in_parent;
     child->pos_in_parent = nentries;
-    if(free_entry_index == NULL) {
-        fat_dir_entry terminator_entry = fat_file_init_direntry(false, strdup(""), 2);
-        terminator_entry->base_name[0] = '\0';
-        fat_file aux_terminator_file = init_file_from_dentry(terminator_entry, parent);
-        aux_terminator_file->pos_in_parent = child->pos_in_parent + 1;
-        write_dir_entry(parent, aux_terminator_file);
-        fat_file_destroy(aux_terminator_file);
-    } else {
-        child->pos_in_parent = *free_entry_index;
-    }
+
     write_dir_entry(parent, child);
     if (errno != 0) {
         child->pos_in_parent = ant_var_child;
@@ -482,6 +472,15 @@ ssize_t fat_file_pread(fat_file file, void *buf, size_t size, off_t offset,
     return size - bytes_remaining;
 }
 
+void fat_file_init_dir_cluster(fat_file dir) {
+    // Borrar la dentry del archivo en el disco
+    size_t entry_size = sizeof(struct fat_dir_entry_s);
+    off_t dir_offset = fat_table_cluster_offset(dir->table, dir->start_cluster);
+    u32 *buf = alloca(entry_size);
+    *buf = 0;
+    pwrite(dir->table->fd, buf, entry_size, dir_offset);
+}
+
 void fat_file_truncate(fat_file file, off_t offset, fat_file parent) {
     u32 last_cluster = 0, next_cluster = 0;
 
@@ -516,6 +515,49 @@ void fat_file_truncate(fat_file file, off_t offset, fat_file parent) {
 
     // Update entrance in directory
     file->dentry->file_size = offset; // Overwrite with new size
+    fill_dentry_time_now(file->dentry, false, true);
+    write_dir_entry(parent, file);
+}
+
+void fat_file_unlink(fat_file file, fat_file parent) {
+    u32 last_cluster = 0, next_cluster = 0;
+
+    last_cluster = file->start_cluster;
+
+    // Mark all clusters as not used
+    while (fat_table_cluster_is_valid(last_cluster)) {
+        // If there was an error, we continue with the function.
+        next_cluster = fat_table_get_next_cluster(file->table, last_cluster);
+        fat_table_set_next_cluster(file->table, last_cluster, FAT_CLUSTER_FREE);
+        last_cluster = next_cluster;
+    }
+
+    // Update entrance in directory
+    file->dentry->base_name[0] = FAT_FILENAME_DELETED_CHAR;
+    fill_dentry_time_now(file->dentry, false, true);
+    write_dir_entry(parent, file);
+}
+
+void fat_file_rmdir(fat_file file, fat_file parent) {
+    u32 last_cluster = 0, next_cluster = 0;
+
+    last_cluster = file->start_cluster;
+
+    // Mark all clusters as not used
+    while (fat_table_cluster_is_valid(last_cluster)) {
+        // If there was an error, we continue with the function.
+        next_cluster = fat_table_get_next_cluster(file->table, last_cluster);
+        fat_table_set_next_cluster(file->table, last_cluster, FAT_CLUSTER_FREE);
+        last_cluster = next_cluster;
+    }
+
+    last_cluster = file_start_cluster(file->dentry);
+    if (fat_table_cluster_is_valid(last_cluster)) {
+        fat_table_set_next_cluster(file->table, last_cluster, FAT_CLUSTER_FREE);
+    }
+
+    // Update entrance in directory
+    file->dentry->base_name[0] = FAT_FILENAME_DELETED_CHAR;
     fill_dentry_time_now(file->dentry, false, true);
     write_dir_entry(parent, file);
 }

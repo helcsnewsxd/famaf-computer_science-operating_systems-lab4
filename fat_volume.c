@@ -323,6 +323,7 @@ fat_volume fat_volume_mount(const char *volume, int mount_flags) {
     vol->table = calloc(1, sizeof(struct fat_table_s));
     if (vol->table == NULL) {
         free(vol);
+        vol = NULL;
         return vol;
     }
 

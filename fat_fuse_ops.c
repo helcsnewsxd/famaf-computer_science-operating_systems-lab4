@@ -24,27 +24,94 @@
 
 #define LOG_MESSAGE_SIZE 100
 #define DATE_MESSAGE_SIZE 30
+#define LOG_FILE_NAME LOG_FILE_BASENAME "." LOG_FILE_EXTENSION
+#define LOG_DIR_NAME BB_DIRNAME
 
-// static void now_to_str(char *buf) {
-//     time_t now = time(NULL);
-//     struct tm *timeinfo;
-//     timeinfo = localtime(&now);
+// ----------------------------- LOG FUNCTIONS -----------------------------
+static void fat_fuse_read_children(fat_tree_node dir_node);
 
-//     strftime(buf, DATE_MESSAGE_SIZE, "%d-%m-%Y %H:%M", timeinfo);
-// }
+static void fat_fuse_log_init() {
+    fat_volume vol = get_fat_volume();
+    fat_tree_node file_node = NULL;
+    int error = 0;
 
-// static void fat_fuse_log_activity(char *operation_type, fat_file file) {
-//     char buf[LOG_MESSAGE_SIZE] = "";
-//     now_to_str(buf);
-//     strcat(buf, "\t");
-//     strcat(buf, getlogin());
-//     strcat(buf, "\t");
-//     strcat(buf, file->filepath);
-//     strcat(buf, "\t");
-//     strcat(buf, operation_type);
-//     strcat(buf, "\n");
-//     int message_size = strlen(buf);
-// }
+    fat_tree_node dir_node = fat_tree_node_search(vol->file_tree, BB_DIRNAME);
+    if (dir_node) {
+        DEBUG("DIR BB EXISTS");
+
+        file_node = fat_tree_node_search(vol->file_tree, BB_LOG_FILE);
+        if (file_node)
+            DEBUG("LOG FILE EXISTS");
+        else
+            DEBUG("ERROR ----> LOG FILE DOESN'T EXISTS");
+
+    } else {
+        DEBUG("I'VE TO INITIALICE THE BB DIR BECAUSE THE FAT IS MOUNTING");
+        bb_init_log_dir();
+
+        DEBUG("NOW, I'VE TO CHECK THE FS.LOG");
+        fat_tree_node dir_node =
+            fat_tree_node_search(vol->file_tree, BB_DIRNAME);
+        fat_fuse_read_children(dir_node); // Refresh BB Directory
+        file_node = fat_tree_node_search(vol->file_tree, BB_LOG_FILE);
+
+        if (file_node)
+            DEBUG("FS.LOG EXISTS, YEAH!");
+        else {
+            DEBUG("FS.LOG DOESN'T EXISTS FFFF");
+            DEBUG("I'VE TO CREATE DE LOG FILE");
+            error = fat_fuse_mknod(BB_LOG_FILE, 0, 0);
+            if (error)
+                return;
+
+            fat_fuse_read_children(dir_node); // Refresh BB Directory
+        }
+    }
+
+    file_node = fat_tree_node_search(vol->file_tree, BB_LOG_FILE);
+    if (file_node)
+        DEBUG("LOG File is present");
+    else
+        DEBUG("ERROR --> LOG File, bad creation");
+}
+
+static void fat_fuse_log_write(char *buf, size_t size) {
+    fat_volume vol = get_fat_volume();
+    fat_tree_node file_node = fat_tree_node_search(vol->file_tree, BB_LOG_FILE);
+    fat_file file = fat_tree_get_file(file_node);
+    fat_file parent = fat_tree_get_parent(file_node);
+    off_t offset = file->dentry->file_size;
+
+    if (size == 0)
+        DEBUG("LOG Write error --> Nothing to write");
+
+    fat_file_pwrite(file, buf, size, offset, parent);
+}
+
+static void now_to_str(char *buf) {
+    time_t now = time(NULL);
+    struct tm *timeinfo;
+    timeinfo = localtime(&now);
+
+    strftime(buf, DATE_MESSAGE_SIZE, "%d-%m-%Y %H:%M", timeinfo);
+}
+
+static void fat_fuse_log_activity(char *operation_type, fat_file file) {
+    char buf[LOG_MESSAGE_SIZE] = "";
+    now_to_str(buf);
+    strcat(buf, "\t");
+    strcat(buf, getlogin());
+    strcat(buf, "\t");
+    strcat(buf, file->filepath);
+    strcat(buf, "\t");
+    strcat(buf, operation_type);
+    strcat(buf, "\n");
+    int message_size = strlen(buf);
+
+    fat_fuse_log_write(buf, message_size);
+}
+
+// -------------------------- END OF LOG FUNCTIONS --------------------------
 
 /* Get file attributes (file descriptor version) */
 int fat_fuse_fgetattr(const char *path, struct stat *stbuf,
@@ -153,12 +220,31 @@ int fat_fuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     children = fat_tree_flatten_h_children(dir_node);
     child = children;
     while (*child != NULL) {
+        // BB Vigilance (It's a tag to search the new code)
+        char *dir_name = LOG_DIR_NAME;
+        dir_name = dir_name + 1;
+
+        DEBUG("CHILD --> %s", (*child)->name);
+        if (!strcmp((*child)->name, LOG_FILE_NAME) ||
+            !strcmp((*child)->name, dir_name)) {
+            DEBUG("Hide File Name --> %s", (*child)->name);
+            child++;
+            continue;
+        }
+
         error = (*filler)(buf, (*child)->name, NULL, 0);
         if (error != 0) {
             return -errno;
         }
         child++;
     }
+
+    // BB Vigilance (It's a tag to search the new code)
+    if (strcmp(path, LOG_DIR_NAME)) {
+        DEBUG("INIT LOG BECAUSE I AM NOT INTO BB/");
+        fat_fuse_log_init();
+    }
+
     return 0;
 }
 
@@ -176,6 +262,9 @@ int fat_fuse_read(const char *path, char *buf, size_t size, off_t offset,
         return -errno;
     }
 
+    // BB Vigilance (It's a tag to search the new code)
+    fat_fuse_log_activity("READ", file);
+
     return bytes_read;
 }
 
@@ -190,6 +279,9 @@ int fat_fuse_write(const char *path, const char *buf, size_t size, off_t offset,
         return 0; // Nothing to write
     if (offset > file->dentry->file_size)
         return -EOVERFLOW;
+
+    // BB Vigilance (It's a tag to search the new code)
+    fat_fuse_log_activity("WRITE", file);
 
     return fat_file_pwrite(file, buf, size, offset, parent);
 }
@@ -237,6 +329,7 @@ int fat_fuse_mkdir(const char *path, mode_t mode) {
     vol->file_tree = fat_tree_insert(vol->file_tree, parent_node, new_file);
     // write file in parent's entry (disk)
     fat_file_dentry_add_child(parent, new_file);
+    fat_file_init_dir_cluster(new_file);
     return -errno;
 }
 
@@ -306,5 +399,50 @@ int fat_fuse_truncate(const char *path, off_t offset) {
     parent = fat_tree_get_parent(file_node);
     fat_tree_inc_num_times_opened(file_node);
     fat_file_truncate(file, offset, parent);
+    return -errno;
+}
+
+/* Remove a file.*/
+int fat_fuse_unlink(const char *path) {
+    errno = 0;
+    fat_volume vol = get_fat_volume();
+    fat_file file = NULL, parent = NULL;
+    fat_tree_node file_node = fat_tree_node_search(vol->file_tree, path);
+    if (file_node == NULL || errno != 0) {
+        errno = ENOENT;
+        return -errno;
+    }
+    file = fat_tree_get_file(file_node);
+    if (fat_file_is_directory(file))
+        return -EISDIR;
+
+    parent = fat_tree_get_parent(file_node);
+    fat_tree_inc_num_times_opened(file_node);
+    fat_file_unlink(file, parent);
+    fat_tree_delete(vol->file_tree, path);
+    return -errno;
+}
+
+/* Remove a directory.*/
+int fat_fuse_rmdir(const char *path) {
+    errno = 0;
+    fat_volume vol = get_fat_volume();
+    fat_file file = NULL, parent = NULL;
+    fat_tree_node file_node = fat_tree_node_search(vol->file_tree, path);
+    if (file_node == NULL || errno != 0) {
+        errno = ENOENT;
+        return -errno;
+    }
+    file = fat_tree_get_file(file_node);
+    if (!fat_file_is_directory(file)) {
+        return -ENOTDIR;
+    } else if (file->dir.nentries != 0) {
+        return -ENOTEMPTY;
+    }
+
+    parent = fat_tree_get_parent(file_node);
+    fat_tree_inc_num_times_opened(file_node);
+    fat_file_rmdir(file, parent);
+    fat_tree_delete(vol->file_tree, path);
     return -errno;
 }
