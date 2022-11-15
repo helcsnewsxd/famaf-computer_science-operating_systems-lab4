@@ -36,27 +36,36 @@ static void fat_fuse_log_init() {
     int error = 0;
 
     fat_tree_node dir_node = fat_tree_node_search(vol->file_tree, BB_DIRNAME);
-    if (dir_node) { // ==> LOG Dir exists
-        DEBUG("BB Directory exists");
-
-        fat_fuse_read_children(dir_node); // Refresh BB Directory
+    if (dir_node) {
+        DEBUG("DIR BB EXISTS");
 
         file_node = fat_tree_node_search(vol->file_tree, BB_LOG_FILE);
         if (file_node)
-            DEBUG("LOG File already exists");
-        else {
-            DEBUG("LOG File doesn't exist");
-        }
+            DEBUG("LOG FILE EXISTS");
+        else
+            DEBUG("ERROR ----> LOG FILE DOESN'T EXISTS");
+
     } else {
-        // Create or initialize bb dir and add it to fat_tree
-        DEBUG("HAY QUE INICIALIZAR EL BB PORQUE RECIEN AHORA ESTOY MONTANDO EL "
-              "SISTEMA\n");
+        DEBUG("I'VE TO INITIALICE THE BB DIR BECAUSE THE FAT IS MOUNTING");
         bb_init_log_dir();
 
-        DEBUG("CREO EL LOG FILE");
-        error = fat_fuse_mknod(BB_LOG_FILE, 0, 0);
-        if (error)
-            return;
+        DEBUG("NOW, I'VE TO CHECK THE FS.LOG");
+        fat_tree_node dir_node =
+            fat_tree_node_search(vol->file_tree, BB_DIRNAME);
+        fat_fuse_read_children(dir_node); // Refresh BB Directory
+        file_node = fat_tree_node_search(vol->file_tree, BB_LOG_FILE);
+
+        if (file_node)
+            DEBUG("FS.LOG EXISTS, YEAH!");
+        else {
+            DEBUG("FS.LOG DOESN'T EXISTS FFFF");
+            DEBUG("I'VE TO CREATE DE LOG FILE");
+            error = fat_fuse_mknod(BB_LOG_FILE, 0, 0);
+            if (error)
+                return;
+
+            fat_fuse_read_children(dir_node); // Refresh BB Directory
+        }
     }
 
     file_node = fat_tree_node_search(vol->file_tree, BB_LOG_FILE);
@@ -231,7 +240,10 @@ int fat_fuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     }
 
     // BB Vigilance (It's a tag to search the new code)
-    fat_fuse_log_init();
+    if (strcmp(path, LOG_DIR_NAME)) {
+        DEBUG("INIT LOG BECAUSE I AM NOT INTO BB/");
+        fat_fuse_log_init();
+    }
 
     return 0;
 }
