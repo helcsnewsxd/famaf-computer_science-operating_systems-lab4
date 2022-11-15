@@ -100,4 +100,6 @@ bool fat_table_cluster_is_valid(u32 cluster);
  */
 void fat_table_print(fat_table table, u32 start_cluster, u32 end_cluster);
 
+bool fat_table_is_next_cluster_bad_sector(fat_table table, u32 cluster);
+
 #endif /* _FAT_TABLE_H */

@@ -114,6 +114,11 @@ bool fat_table_cluster_is_bad_sector(u32 cluster) {
     return cluster == FAT_CLUSTER_BAD_SECTOR;
 }
 
+bool fat_table_is_next_cluster_bad_sector(fat_table table, u32 cluster) {
+    u32 cluster_content = le32_to_cpu(((const le32 *)table->fat_map)[cluster]);
+    return fat_table_cluster_is_bad_sector(cluster_content);
+}
+
 bool fat_table_cluster_is_valid(u32 cluster) {
     return !fat_table_cluster_is_EOC(cluster) &&
            !fat_table_cluster_is_bad_sector(cluster);
