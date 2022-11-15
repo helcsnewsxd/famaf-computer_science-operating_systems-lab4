@@ -19,7 +19,7 @@ Luego de una investigación, descubrimos que en la práctica, un directorio en F
 Pero teóricamente, el tamaño máximo de un archivo es 2^32 - 1 bytes (este límite es una consecuencia de que la entrada de tamaño de archivo en fat_dir_entry sea de 32 bits)...
 Por lo que si creamos un directorio de ese tamaño, podriamos tener (2^32 - 1) /32 = 134,217,727 entradas de directorio (de 32 bytes), por lo que podríamos tener 134,217,725 = 2^27 - 3 archivos en un directorio.
 
-AUN NO SABEMOS A QUE SE DEBE ESTA DISCREPANCIA
+
 
 # (4) Cuando se ejecuta el comando como ls -l, el sistema operativo, ¿llama a algún programa de usuario? ¿A alguna llamada al sistema? ¿Cómo se conecta esto con FUSE? ¿Qué funciones de su código se ejecutan finalmente?
 
@@ -29,7 +29,9 @@ AUN NO SABEMOS A QUE SE DEBE ESTA DISCREPANCIA
 
 
 # (5) ¿Por qué tienen que escribir las entradas de directorio manualmente pero no tienen que guardar la tabla FAT cada vez que la modifican?
+Porque las únicas veces que se escribe (y por lo tanto necesitamos guardar) la tabla FAT es para marcar clusters como ocupados (y generar cadenas de clusters ocupados). 
 
+Una vez ya asignados los clusters correspondientes a un archivo, mientras no necesitemos agregar clusters (porque nos quedamos sin espacio en los actuales clusters y queremos ampliar el tamaño del archivo) no será necesario modificar la tabla FAT, para actualizar el contenido del archivo solo necesitamos modificar el contenido de los clusters asignados al archivo. 
 
 # (6) Para los sistemas de archivos FAT32, la tabla FAT, ¿siempre tiene el mismo tamaño? En caso de que sí, ¿qué tamaño tiene?
 La tabla FAT no tiene siempre el mismo tamaño, el tamaño depende de la cantidad de clusters que tenga el sistema archivos, lo cual depende del tamaño del dispositivo o la imagen en la cual estemos utilizando el sistema de archivos FAT. Lo que sí sucede es que mantiene su tamaño una vez el sistema de archivos FAT está implementado en el dispositivo o la imagen, no es una estructura que crezca o decrezca de tamaño.
