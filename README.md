@@ -19,7 +19,7 @@ Luego de una investigación, descubrimos que en la práctica, un directorio en F
 Pero teóricamente, el tamaño máximo de un archivo es 2^32 - 1 bytes (este límite es una consecuencia de que la entrada de tamaño de archivo en fat_dir_entry sea de 32 bits)...
 Por lo que si creamos un directorio de ese tamaño, podriamos tener (2^32 - 1) /32 = 134,217,727 entradas de directorio (de 32 bytes), por lo que podríamos tener 134,217,725 = 2^27 - 3 archivos en un directorio.
 
-
+Creemos que está diferencia entre la cantidad de archivos que podría tener teóricamente un directorio y la cantidad máxima que en la práctica puede tener un directorio se basa en una decisión de diseño del sistema de archivos FAT.
 
 # (4) Cuando se ejecuta el comando como ls -l, el sistema operativo, ¿llama a algún programa de usuario? ¿A alguna llamada al sistema? ¿Cómo se conecta esto con FUSE? ¿Qué funciones de su código se ejecutan finalmente?
 
